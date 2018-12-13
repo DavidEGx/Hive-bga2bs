@@ -69,8 +69,8 @@ class Bug {
       bgaPos = bgaPos.replace("bP", "bP1");
       bgaPos = bgaPos.replace("bM", "bM1");
 
-      var matches;
-      var otherBugPos;
+      let matches;
+      let otherBugPos;
 
       // TODO: This surely would require some explanation...
       if (matches = bgaPos.match("^/(.*)")) {
@@ -129,7 +129,7 @@ class Bug {
   bsPosition() {
     if (this.position === undefined) {
       // Bugs in the reserve come from some magic position in boardspace.
-      var bugIdx = {
+      let bugIdx = {
         "Q": 0,
         "A": 1,
         "G": 2,
@@ -186,7 +186,7 @@ class HiveGame {
       return this._bugs[bugName];
     }
 
-    var bug = new Bug(bugName, this);
+    let bug = new Bug(bugName, this);
     this._bugs[bugName] = bug;
     return bug;
   }
@@ -211,10 +211,10 @@ class HiveGame {
    */
   addMovement(bgaMove) {
     console.log(`Adding movement ${bgaMove}`);
-    var bug    = this.get(bgaMove.split(" ")[0].trim());
-    var bgaPos = bgaMove.split(" ")[1].trim() || ".";
+    let bug    = this.get(bgaMove.split(" ")[0].trim());
+    let bgaPos = bgaMove.split(" ")[1].trim() || ".";
 
-    var bsPick = `${bug.bsPickCommand()} ${bug.bsPosition()}`;
+    let bsPick = `${bug.bsPickCommand()} ${bug.bsPosition()}`;
     bug.setPositionFromBga(bgaPos);
 
     this._movements.push(`;${this._player}[${this._moveIdx++} ${bsPick} ${bug._name}]`);
@@ -229,21 +229,21 @@ class HiveGame {
    * Need to swap bugs in case they appear in the wrong order.
    */
   _fixBugsOrder (gameStr) {
-    var toFix = ['wA', 'wB', 'wG', 'wS', 'bA', 'bB', 'bG', 'bS'];
+    let toFix = ['wA', 'wB', 'wG', 'wS', 'bA', 'bB', 'bG', 'bS'];
 
 
     // TODO: Rewrite in a less messy way
-    for (var i = 0; i < toFix.length; i++) {
-      var bug = toFix[i];
-      var bug1   = bug + "1";
-      var bug2   = bug + "2";
-      var bug3   = bug + "3";
-      var index1 = gameStr.indexOf(bug + "1");
-      var index2 = gameStr.indexOf(bug + "2");
-      var index3 = gameStr.indexOf(bug + "3");
-      var re1 = new RegExp(bug1, 'g');
-      var re2 = new RegExp(bug2, 'g');
-      var re3 = new RegExp(bug3, 'g');
+    for (let i = 0; i < toFix.length; i++) {
+      let bug = toFix[i];
+      let bug1   = bug + "1";
+      let bug2   = bug + "2";
+      let bug3   = bug + "3";
+      let index1 = gameStr.indexOf(bug + "1");
+      let index2 = gameStr.indexOf(bug + "2");
+      let index3 = gameStr.indexOf(bug + "3");
+      let re1 = new RegExp(bug1, 'g');
+      let re2 = new RegExp(bug2, 'g');
+      let re3 = new RegExp(bug3, 'g');
 
       if (index3 > 0) {
         if (index2 < 0) {
@@ -285,7 +285,7 @@ class HiveGame {
    * Returns the game string in a format understandable by BoardSpace.
    */
   getBsGame () {
-    var gameStr = `(;
+    let gameStr = `(;
       GM[27]VV[1]
       SU[hive-plm]
       P0[id "${this._player_0}"]
@@ -307,17 +307,17 @@ class HiveGame {
   }
 }
 
-var table_id = g_gamelogs[0].table_id;
-var player_0 = g_gamelogs[1].data[0].args.player_name;
-var player_1 = g_gamelogs[2].data[0].args.player_name;
-var hiveGame = new HiveGame(table_id, player_0, player_1);
+let table_id = g_gamelogs[0].table_id;
+let player_0 = g_gamelogs[1].data[0].args.player_name;
+let player_1 = g_gamelogs[2].data[0].args.player_name;
+let hiveGame = new HiveGame(table_id, player_0, player_1);
 
-for (var i = 0; i < g_gamelogs.length; i++) {
-  var actions = g_gamelogs[i].data;
-  for (var j = 0; j < actions.length; j++) {
-    var action = actions[j];
+for (let i = 0; i < g_gamelogs.length; i++) {
+  let actions = g_gamelogs[i].data;
+  for (let j = 0; j < actions.length; j++) {
+    let action = actions[j];
     if (action.type === "tokenPlayed") {
-      var bgaMove = action.args.notation;
+      let bgaMove = action.args.notation;
       if (bgaMove.match(/.* .*/)) {
         hiveGame.addMovement(bgaMove);
       }
@@ -331,7 +331,7 @@ for (var i = 0; i < g_gamelogs.length; i++) {
 downloadURI("data:text/plain," + encodeURIComponent(hiveGame.getBsGame()), hiveGame.getBsName());
 
 function downloadURI(uri, name) {
-  var link = document.createElement("a");
+  let link = document.createElement("a");
   link.download = name;
   link.href = uri;
   document.body.appendChild(link);
