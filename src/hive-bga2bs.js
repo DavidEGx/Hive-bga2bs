@@ -210,14 +210,15 @@ class HiveGame {
    * @param {string} bgaMove - Move as it is stored in BGA js variables.
    */
   addMovement(bgaMove) {
+    console.log(`Adding movement ${bgaMove}`);
     var bug    = this.get(bgaMove.split(" ")[0].trim());
     var bgaPos = bgaMove.split(" ")[1].trim() || ".";
 
     var bsPick = `${bug.bsPickCommand()} ${bug.bsPosition()}`;
     bug.setPositionFromBga(bgaPos);
 
-    this._movements.push(`;${this._player}[${this._moveIdx++} ${bsPick} ${bug.name}]`);
-    this._movements.push(`;${this._player}[${this._moveIdx++} dropb ${bug.name} ${bug.bsPosition()} ${bug.lastMovement()}]`);
+    this._movements.push(`;${this._player}[${this._moveIdx++} ${bsPick} ${bug._name}]`);
+    this._movements.push(`;${this._player}[${this._moveIdx++} dropb ${bug._name} ${bug.bsPosition()} ${bug.lastMovement()}]`);
     this._movements.push(`;${this._player}[${this._moveIdx++} done]`);
 
     this.switchPlayer();
@@ -302,7 +303,7 @@ class HiveGame {
    * @return {string} Name for the game.
    */
   getBsName () {
-    return `bga2bs-${this.player_0}-${this.player_1}-${this.table_id}.sgf`;
+    return `bga2bs-${this._player_0}-${this._player_1}-${this._table_id}.sgf`;
   }
 }
 
@@ -317,7 +318,12 @@ for (var i = 0; i < g_gamelogs.length; i++) {
     var action = actions[j];
     if (action.type === "tokenPlayed") {
       var bgaMove = action.args.notation;
-      hiveGame.addMovement(bgaMove);
+      if (bgaMove.match(/.* .*/)) {
+        hiveGame.addMovement(bgaMove);
+      }
+      else {
+        console.error("Player should use Tournament notation for this to work");
+      }
     }
   }
 }
