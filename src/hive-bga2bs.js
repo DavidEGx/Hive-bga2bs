@@ -24,6 +24,10 @@
  * See https://caiorss.github.io/bookmarklet-maker/
  */
 
+// Don't want to flood BGA with too may requests.
+const REQUEST_INTERVAL = 5000;
+const MAX_GAMES        = 5;
+
 /**
  * Class that represents a Hive bug.
  * Most important things about the bug are its name and position.
@@ -211,7 +215,7 @@ class HiveGame {
    * @param {string} bgaMove - Move as it is stored in BGA js variables.
    */
   addMovement(bgaMove) {
-    console.log(`Adding movement ${bgaMove}`);
+    console.debug(`Adding movement ${bgaMove}`);
 
     bgaMove      = bgaMove.match(/\[?(.*?)\]?$/)[1];
     const bug    = this.get(bgaMove.split(" ")[0].trim());
@@ -310,15 +314,117 @@ class HiveGame {
   }
 }
 
-let hiveGame;
+/**
+ * Provides some static methods to deal with BoardGameArena.
+ */
+class BGA {
+  /**
+   * Get game log from BGA for a single table.
+   * @param {number} tableId    - Table Id from BGA you want to process.
+   * @param {function} callback - Whatever you want to do with the game log.
+   */
+  static getGame(tableId, callback) {
+    console.info(`Getting game ${tableId}`);
+
+    const getGameLog = function () {
+      console.info(`Getting game log ${tableId}`);
+      dojo.xhrGet({
+        url: "https://en.boardgamearena.com/archive/archive/logs.html",
+        preventCache: true,
+        content: { table: tableId, translated: true },
+        load: callback
+      });
+    };
+
+    dojo.xhrGet({
+      url: "https://en.boardgamearena.com/gamereview",
+      preventCache: true,
+      content: { table: tableId, refreshtemplate: 1 },
+      load: getGameLog
+    });
+  }
+
+  /**
+   * Parse game log from BGA.
+   * @param data {string} - Game log from BGA.
+   * @return {HiveGame}   - HiveGame object created from the log.
+   */
+  static parseGame(data) {
+    const table_id = data[0].table_id;
+    const player_0 = data[1].data[0].args.player_name || data[3].data[0].args.player_name;
+    const player_1 = data[2].data[0].args.player_name || data[4].data[0].args.player_name;
+    const hiveGame = new HiveGame(table_id, player_0, player_1);
+
+    for (let i = 0; i < data.length; i++) {
+      const actions = data[i].data;
+      for (let j = 0; j < actions.length; j++) {
+        const action = actions[j];
+        if (action.type === "tokenPlayed") {
+          const bgaMove = action.args.notation;
+          if (bgaMove.match(/.* .*/)) {
+            hiveGame.addMovement(bgaMove);
+          }
+          else {
+            // TODO: Change this. It does not make sense when you are in a list of games
+            alert("Cannot download game. I will redirect to gamereview page.\nTry again from there.");
+            document.location = `https://en.boardgamearena.com/#!gamereview?table=${table_id}`;
+          }
+        }
+      }
+    }
+    return hiveGame;
+  }
+}
+
+/**
+ * Some utitlies I need to use.
+ */
+class Util {
+  /**
+   * Create a zip file with the games provided a download them.
+   * If there is only one game will return a single text file instead.
+   * @hiveGames {array} - Array containing hive games you want to download.
+   */
+  static download(hiveGames) {
+    if (hiveGames.length === 1) {
+      const hiveGame = hiveGames[0];
+      Util._downloadURI("data:text/plain," + encodeURIComponent(hiveGame.getBsGame()), hiveGame.getBsName());
+    }
+    else {
+      require(["https://stuk.github.io/jszip/dist/jszip.js"], function(JSZip) {
+        const zip    = new JSZip();
+        const folder = zip.folder("games");
+        hiveGames.forEach((game) => {
+          folder.file(game.getBsName(), game.getBsGame());
+        });
+        zip.generateAsync({type:"base64"}).then(function(base64) {
+          Util._downloadURI("data:application/zip;base64," + base64, "games.zip");
+        });
+      });
+    }
+  }
+
+  /**
+   * Helper method to download a string as a file.
+   */
+  static _downloadURI(uri, name) {
+    const link = document.createElement("a");
+    link.download = name;
+    link.href = uri;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
 
 if (document.URL.match(/archive\/replay/)) {
-  hiveGame = parseBGA(g_gamelogs);
+  const hiveGame = BGA.parseGame(g_gamelogs);
+  Util.download([ hiveGame ]);
 }
 else if (document.URL.match(/gamereview/)) {
   const table_id  = document.URL.match(/table=(\d+)/)[1];
   const players   = document.getElementById("game_result").getElementsByClassName("name");
-  hiveGame        = new HiveGame(table_id, players[0].textContent, players[1].textContent);
+  const hiveGame  = new HiveGame(table_id, players[0].textContent, players[1].textContent);
 
   const movements = document.getElementsByClassName("gamelogreview");
   for (let i = 0; i < movements.length; i++) {
@@ -328,40 +434,38 @@ else if (document.URL.match(/gamereview/)) {
       hiveGame.addMovement(bgaMove[1].trim());
     }
   }
+  Util.download([ hiveGame ]);
 }
-downloadURI("data:text/plain," + encodeURIComponent(hiveGame.getBsGame()), hiveGame.getBsName());
+else if (document.URL.match(/gamestats/)) {
+  alert("This might take some time. Please wait"); // TODO: Progress bar or something
 
-function downloadURI(uri, name) {
-  let link = document.createElement("a");
-  link.download = name;
-  link.href = uri;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  delete link;
-}
+  const allLinks    = Array.from(document.getElementById("gamelist_inner").getElementsByTagName("a"));
+  const linkToGames = allLinks.filter(function (link) { return link.href.match(/table/); }).slice(0, MAX_GAMES);
+  const hiveGames   = [];
 
-function parseBGA (data) {
-  const table_id = data[0].table_id;
-  const player_0 = data[1].data[0].args.player_name;
-  const player_1 = data[2].data[0].args.player_name;
-  const hiveGame = new HiveGame(table_id, player_0, player_1);
-
-  for (let i = 0; i < data.length; i++) {
-    const actions = data[i].data;
-    for (let j = 0; j < actions.length; j++) {
-      const action = actions[j];
-      if (action.type === "tokenPlayed") {
-        const bgaMove = action.args.notation;
-        if (bgaMove.match(/.* .*/)) {
-          hiveGame.addMovement(bgaMove);
-        }
-        else {
-          alert("Cannot download game. I will redirect to gamereview page.\nTry again from there.");
-          document.location = `https://en.boardgamearena.com/#!gamereview?table=${table_id}`;
-        }
-      }
+  const processLinks = function (linkList) {
+    const gameLink = linkList.pop();
+    if (gameLink === undefined) {
+      Util.download(hiveGames);
     }
-  }
-  return hiveGame;
+    else {
+      const tableURL = gameLink.href;
+      const tableId  = tableURL.match(/\d+/)[0];
+
+      BGA.getGame(tableId, (textLog) => {
+        const json = JSON.parse(textLog);
+        if (json.status === "0") {
+          console.error(`Cannot get data for this table ${tableId}`);
+          return;
+        }
+        const log = json.data.data.data;
+        hiveGames.push(BGA.parseGame(log));
+
+        setTimeout(function() {
+          processLinks(linkList);
+        }, REQUEST_INTERVAL);
+      });
+    }
+  };
+  processLinks(linkToGames);
 }
