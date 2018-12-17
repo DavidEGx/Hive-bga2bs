@@ -174,10 +174,22 @@ class HiveGame {
   }
 
   /**
+   * @param {object} json - JSON stored in cache.
+   * @return {HiveGame} Returns new HiveGame from Cache
+   */
+  static fromCache(json) {
+    const theGame = new HiveGame(json._table_id, json._player_0, json._player_1);
+    theGame._movements = json._movements;
+    theGame._moveIdx   = json._moveIdx;
+    theGame._player    = json._player;
+    return theGame;
+  }
+
+  /**
    * Gets a bug that matches the bug name from the Hive.
    * It will create a new one if it does not exist yet.
    *
-   * @param {string} The bug you are looking for (wA1, wQ, bP1, etc)
+   * @param {string} bugName - The bug you are looking for (wA1, wQ, bP1, etc)
    * @return {Bug} The requested bug.
    */
   get(bugName) {
@@ -363,6 +375,27 @@ class BGA {
  */
 class Util {
   /**
+   * Cache games so I don't query BGA again for a game I already got.
+   */
+  static cache(tableId, game) {
+    const games = JSON.parse(localStorage.getItem("bga2bs") || "[]");
+
+    if (game === undefined) {
+      if (games[tableId]) {
+        return HiveGame.fromCache(games[tableId]);
+      }
+      return false;
+    }
+
+    // Clean _bugs, otherwise stringify will fail due to cyclic structure.
+    // At this point _bugs is not used so who cares. TODO: Bit messy, refactor.
+    game._bugs = undefined;
+
+    games[tableId] = game;
+    localStorage.setItem("bga2bs", JSON.stringify(games));
+  }
+
+  /**
    * Create a zip file with the games provided a download them.
    * If there is only one game will return a single text file instead.
    * @hiveGames {array} - Array containing hive games you want to download.
@@ -431,22 +464,32 @@ else if (document.URL.match(/gamestats/)) {
       Util.download(hiveGames);
     }
     else {
-      const tableURL = gameLink.href;
-      const tableId  = tableURL.match(/\d+/)[0];
+      const tableURL   = gameLink.href;
+      const tableId    = tableURL.match(/\d+/)[0];
+      const cachedGame = Util.cache(tableId);
 
-      BGA.getGame(tableId, (textLog) => {
-        const json = JSON.parse(textLog);
-        if (json.status === "0") {
-          console.error(`Cannot get data for this table ${tableId}`);
-          return;
-        }
-        const log = json.data.data.data;
-        hiveGames.push(BGA.parseGame(log));
+      if (cachedGame) {
+        console.info(`Getting ${tableId} from cache`);
+        hiveGames.push(cachedGame);
+        processLinks(linkList);
+      }
+      else {
+        BGA.getGame(tableId, (textLog) => {
+          const json = JSON.parse(textLog);
+          if (json.status === "0") {
+            console.error(`Cannot get data for this table ${tableId}`);
+            return;
+          }
+          const log      = json.data.data.data;
+          const hiveGame = BGA.parseGame(log);
+          hiveGames.push(hiveGame);
+          Util.cache(tableId, hiveGame);
 
-        setTimeout(function() {
-          processLinks(linkList);
-        }, REQUEST_INTERVAL);
-      });
+          setTimeout(function() {
+            processLinks(linkList);
+          }, REQUEST_INTERVAL);
+        });
+      }
     }
   };
   processLinks(linkToGames);
