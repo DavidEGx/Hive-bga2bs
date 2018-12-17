@@ -238,50 +238,32 @@ class HiveGame {
   _fixBugsOrder (gameStr) {
     const toFix = ["wA", "wB", "wG", "wS", "bA", "bB", "bG", "bS"];
 
+    for (let bug of toFix) {
+      let needReplacement = true;
 
-    // TODO: Rewrite in a less messy way
-    for (let i = 0; i < toFix.length; i++) {
-      const bug = toFix[i];
-      const bug1   = bug + "1";
-      const bug2   = bug + "2";
-      const bug3   = bug + "3";
-      const index1 = gameStr.indexOf(bug + "1");
-      const index2 = gameStr.indexOf(bug + "2");
-      const index3 = gameStr.indexOf(bug + "3");
-      const re1 = new RegExp(bug1, "g");
-      const re2 = new RegExp(bug2, "g");
-      const re3 = new RegExp(bug3, "g");
+      while (needReplacement) {
+        needReplacement = false;
 
-      if (index3 > 0) {
-        if (index2 < 0) {
-          gameStr = gameStr.replace(re3, bug2);
-        }
-        else if (index3 < index2) {
-          gameStr = gameStr.replace(re3, "SWAPME");
-          gameStr = gameStr.replace(re2, bug3);
-          gameStr = gameStr.replace(/SWAPME/g, bug2);
-        }
-      }
+        for (let i = 1; i <= 2; i++) {
+          const bug1   = bug + i;
+          const bug2   = bug + (i + 1);
+          const index1 = gameStr.indexOf(bug1);
+          const index2 = gameStr.indexOf(bug2);
+          const re1 = new RegExp(bug1, "g");
+          const re2 = new RegExp(bug2, "g");
 
-      if (index2 > 0) {
-        if (index1 < 0) {
-          gameStr = gameStr.replace(re2, bug1);
-        }
-        else if (index2 < index1) {
-          gameStr = gameStr.replace(re2, "SWAPME");
-          gameStr = gameStr.replace(re1, bug2);
-          gameStr = gameStr.replace(/SWAPME/g, bug1);
-        }
-      }
-
-      if (index3 > 0) {
-        if (index2 < 0) {
-          gameStr = gameStr.replace(re3, bug2);
-        }
-        else if (index3 < index2) {
-          gameStr = gameStr.replace(re3, "SWAPME");
-          gameStr = gameStr.replace(re2, bug3);
-          gameStr = gameStr.replace(/SWAPME/g, bug2);
+          if (index2 > 0) {
+            if (index1 < 0) {
+              gameStr = gameStr.replace(re2, bug1);
+              needReplacement = true;
+            }
+            else if (index2 < index1) {
+              gameStr = gameStr.replace(re2, "SWAPME");
+              gameStr = gameStr.replace(re1, bug2);
+              gameStr = gameStr.replace(/SWAPME/g, bug1);
+              needReplacement = true;
+            }
+          }
         }
       }
     }
