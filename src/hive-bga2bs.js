@@ -494,3 +494,22 @@ else if (document.URL.match(/gamestats/)) {
   };
   processLinks(linkToGames);
 }
+else if (document.URL.match(/hive\?table=\d+/)) {
+  const tableId   = document.URL.match(/hive\?table=(\d+)/)[1];
+  const movements = Array.from(document.getElementById("logs").getElementsByClassName("log_replayable")).reverse();
+  const player_0  = movements[0].getElementsByTagName("div")[0].textContent.match(/([^\s]+)\s/)[1];
+  const player_1  = movements[1].getElementsByTagName("div")[0].textContent.match(/([^\s]+)\s/)[1];
+  const hiveGame  = new HiveGame(tableId, player_0, player_1);
+
+  if (movements[0].getElementsByTagName("div")[0].textContent.match(/places a new/)) {
+    alert("Please use Tournament style notation");
+  }
+  else {
+    movements.forEach( m => {
+      const text    = m.getElementsByTagName("div")[0].textContent;
+      const moveStr = text.match(/\s(.+)$/).pop();
+      hiveGame.addMovement(moveStr);
+    });
+    Util.download([ hiveGame ]);
+  }
+}
