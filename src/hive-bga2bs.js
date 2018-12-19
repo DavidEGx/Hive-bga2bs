@@ -430,6 +430,40 @@ class Util {
     link.click();
     document.body.removeChild(link);
   }
+
+  /**
+   * Simple progress bar.
+   */
+  static progress() {
+    let progressBar = document.getElementById("bga2bs-progress");
+    if (!progressBar) {
+      progressBar = document.createElement("div");
+      progressBar.id               = "bga2bs-progress";
+      progressBar.style.backgroundColor = "black";
+      progressBar.style.color      = "white";
+      progressBar.style.position   = "absolute";
+      progressBar.style.width      = "0%";
+      progressBar.style.height     = "100px";
+      progressBar.style["z-index"] = 99999;
+      progressBar.style.left       = 0;
+      progressBar.style.top        = 0;
+      progressBar.appendChild(document.createTextNode("0%"));
+      document.body.appendChild(progressBar);
+
+      const progressBarBg = document.createElement("div");
+      progressBarBg.style.backgroundColor = "white";
+      progressBarBg.style.position   = "absolute";
+      progressBarBg.style.width      = "100%";
+      progressBarBg.style.height     = "100px";
+      progressBarBg.style["z-index"] = 99998;
+      progressBarBg.style.left       = 0;
+      progressBarBg.style.top        = 0;
+      document.body.appendChild(progressBarBg);
+    }
+
+    const percentage = parseFloat(progressBar.style.width) + (100 / MAX_GAMES) + "%";
+    progressBar.innerText = percentage;
+  }
 }
 
 if (document.URL.match(/archive\/replay/)) {
@@ -484,6 +518,7 @@ else if (document.URL.match(/gamestats/)) {
           const hiveGame = BGA.parseGame(log);
           hiveGames.push(hiveGame);
           Util.cache(tableId, hiveGame);
+          Util.progress();
 
           setTimeout(function() {
             processLinks(linkList);
