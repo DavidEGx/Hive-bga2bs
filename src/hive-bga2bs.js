@@ -430,6 +430,44 @@ class Util {
     link.click();
     document.body.removeChild(link);
   }
+
+  /**
+   * Simple progress bar.
+   * @param {boolean} done - True to remove the progress bar.
+   */
+  static progress(done) {
+    let progressBar = document.getElementById("bga2bs-progress");
+
+    if (done && progressBar) {
+      document.body.removeChild(progressBar.parentNode);
+    }
+    else if (!progressBar) {
+      progressBar = document.createElement("progress");
+      progressBar.id               = "bga2bs-progress";
+      progressBar.style.width      = "75%";
+      progressBar.style.height     = "1.5em";
+      progressBar.style.float      = "right";
+      progressBar.max              = MAX_GAMES;
+      progressBar.value            = 0;
+
+      const progressBarContainer = document.createElement("div");
+      progressBarContainer.style.backgroundColor = "white";
+      progressBarContainer.style.position   = "fixed";
+      progressBarContainer.style.width      = "90%";
+      progressBarContainer.style.height     = "4em";
+      progressBarContainer.style["z-index"] = 99999;
+      progressBarContainer.style.left       = "0.5em";
+      progressBarContainer.style.top        = "0.5em";
+      progressBarContainer.style.padding    = "15px";
+      progressBarContainer.style.border     = "solid 1px black";
+      progressBarContainer.appendChild(document.createElement("span"));
+      progressBarContainer.appendChild(progressBar);
+      document.body.appendChild(progressBarContainer);
+    }
+
+    progressBar.value += 1;
+    progressBar.parentNode.querySelector('span').innerText = `Progress: ${progressBar.value} / ${MAX_GAMES}`;
+  }
 }
 
 if (document.URL.match(/archive\/replay/)) {
@@ -462,11 +500,13 @@ else if (document.URL.match(/gamestats/)) {
     const gameLink = linkList.pop();
     if (gameLink === undefined) {
       Util.download(hiveGames);
+      Util.progress("done");
     }
     else {
       const tableURL   = gameLink.href;
       const tableId    = tableURL.match(/\d+/)[0];
       const cachedGame = Util.cache(tableId);
+      Util.progress();
 
       if (cachedGame) {
         console.info(`Getting ${tableId} from cache`);
@@ -477,13 +517,20 @@ else if (document.URL.match(/gamestats/)) {
         BGA.getGame(tableId, (textLog) => {
           const json = JSON.parse(textLog);
           if (json.status === "0") {
-            console.error(`Cannot get data for this table ${tableId}`);
-            return;
+            console.error(`Cannot get data for this table ${tableId}: ${json.error}`);
+            if (json.error !== "Cannot find gamenotifs log file of an archived table") {
+              return;
+            }
           }
-          const log      = json.data.data.data;
-          const hiveGame = BGA.parseGame(log);
-          hiveGames.push(hiveGame);
-          Util.cache(tableId, hiveGame);
+          try {
+            const log      = json.data.data.data;
+            const hiveGame = BGA.parseGame(log);
+            hiveGames.push(hiveGame);
+            Util.cache(tableId, hiveGame);
+          }
+          catch(err) {
+            console.error("Couldn't process log");
+          }
 
           setTimeout(function() {
             processLinks(linkList);
