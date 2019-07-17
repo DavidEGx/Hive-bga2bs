@@ -28,6 +28,8 @@
 const REQUEST_INTERVAL = 5000;
 const MAX_GAMES        = 5;
 
+const BASE_URL         = window.location.origin;
+
 /**
  * Class that represents a Hive bug.
  * Most important things about the bug are its name and position.
@@ -323,7 +325,7 @@ class BGA {
     const getGameLog = function () {
       console.info(`Getting game log ${tableId}`);
       dojo.xhrGet({
-        url: "https://en.boardgamearena.com/archive/archive/logs.html",
+        url: `${BASE_URL}/archive/archive/logs.html`,
         preventCache: true,
         content: { table: tableId, translated: true },
         load: callback
@@ -331,7 +333,7 @@ class BGA {
     };
 
     dojo.xhrGet({
-      url: "https://en.boardgamearena.com/gamereview",
+      url: `${BASE_URL}/gamereview`,
       preventCache: true,
       content: { table: tableId, refreshtemplate: 1 },
       load: getGameLog
@@ -361,7 +363,7 @@ class BGA {
           else {
             // TODO: Change this. It does not make sense when you are in a list of games
             alert("Cannot download game. I will redirect to gamereview page.\nTry again from there.");
-            document.location = `https://en.boardgamearena.com/#!gamereview?table=${table_id}`;
+            document.location = `${BASE_URL}/#!gamereview?table=${table_id}`;
           }
         }
       }
