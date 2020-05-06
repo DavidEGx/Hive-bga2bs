@@ -17,10 +17,9 @@
  * Usage:
  * 1. Go to any archived Hive game in BGA (example: https://en.boardgamearena.com/#!table?table=46229629)
  * 2. Replay game.
- * 3. Choose a player.
- * 4. Fire your javascript console and paste this script.
+ * 3. Fire your javascript console and paste this script.
  *
- * As 4 is a pain in the ass the best way is to create a bookmark with the script.
+ * As 3 is a pain in the ass the best way is to create a bookmark with the script.
  * See https://caiorss.github.io/bookmarklet-maker/
  */
 
