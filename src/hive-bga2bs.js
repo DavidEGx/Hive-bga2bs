@@ -477,10 +477,12 @@ if (document.URL.match(/archive\/replay/)) {
 }
 else if (document.URL.match(/gamereview/)) {
   const table_id  = document.URL.match(/table=(\d+)/)[1];
-  const players   = document.getElementById("game_result").getElementsByClassName("name");
-  const hiveGame  = new HiveGame(table_id, players[0].textContent, players[1].textContent);
-
+  const players   = Array.from(document.getElementById("game_result").getElementsByClassName("name")).map(e => e.textContent);
   const movements = document.getElementsByClassName("gamelogreview");
+  const hiveGame  = (movements[0].textContent.split(" ")[0] === players[0])
+                    ? new HiveGame(table_id, players[0], players[1])
+                    : new HiveGame(table_id, players[1], players[0]);
+
   for (let i = 0; i < movements.length; i++) {
     const movement = movements[i].textContent;
     const bgaMove  = movement.match(/\[(.*)\]/);
