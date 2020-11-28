@@ -558,7 +558,10 @@ else if (document.URL.match(/hive\?table=\d+/)) {
     movements.forEach( m => {
       const text    = m.getElementsByTagName("div")[0].textContent;
       const moveStr = text.match(/\s(.+)$/).pop();
-      hiveGame.addMovement(moveStr);
+      try {
+        hiveGame.addMovement(moveStr);
+      }
+      catch (error) {}
     });
     Util.download([ hiveGame ]);
   }
